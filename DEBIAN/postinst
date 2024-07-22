@@ -1,0 +1,11 @@
+#!/bin/bash
+
+if [ ! -f /etc/ssh-menu/server-list ]
+then
+    cp /etc/ssh-menu/server-list.sample /etc/ssh-menu/server-list
+fi
+
+if [ ! -f /etc/hist/enable ]
+then
+    cp /etc/hist/enable.sample /etc/hist/enable
+fi

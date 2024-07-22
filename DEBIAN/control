@@ -1,0 +1,6 @@
+Package: adminitools
+Version: 0.8.9b
+Maintainer: Server Man
+Architecture: all
+Description: Mini tools for admins
+Source: adminitools

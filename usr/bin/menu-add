@@ -1,0 +1,157 @@
+#!/bin/bash
+
+#Init list file name
+listfile="/etc/ssh-menu/server-list"
+
+sshcommand=""
+
+#Add string function
+addsshstring () {
+  if [ $(cat $listfile | grep -c "$sshcommand") = 0 ]
+    then
+      echo "$sshcommand" | sudo tee -a $listfile
+    fi
+}
+
+#Remove mock data from listfile
+demock () {
+  if [ -f "$listfile" ] && [ $(cat $listfile | wc -l) = 0 ] && [ $(cat $listfile | grep -c "Mockserver") = 1 ]
+    then
+      sudo rm -f $listfile 
+  fi
+  sudo touch $listfile
+}
+
+#Settings file parser function
+confparse () {
+  conffile=$1
+  servname=$(echo "$conffile" | awk -F/ '{print $NF}' | sed -r 's/(.[^.]*){1}$//')
+  linescount=$(grep -c "^ssh -" $conffile)
+  for ((index=1; index <= linescount; index++))
+    do
+      sshcommand=$(grep "^ssh -" $conffile | tail -$index | head -1)
+      sshcommand+=" #$servname"
+      if ! [ $(echo "$sshcommand" | grep -c "Proxy") = 0 ]
+        then  
+          sshcommand+=" proxied"
+        fi
+      addsshstring
+    done
+}
+
+#Help output function
+printhelp () {
+  echo -e "This tool made for adding new servers to list used by \033[33;1mssh-menu\033[0m utility"
+  echo -e "Usage: \033[33;1mmenu-add -h\033[0m or \033[33;1mmenu-add --help\033[0m - to print this help"
+  echo -e "\033[33;1mmenu-add <argument1> <argument2>...\033[0m with as many arguments as you need"
+  echo -e "where argument could be either name of file, which contains ssh commands"
+  echo -e "that looks like '\033[33;1mssh -p port user@127.0.0.1 #description\033[0m'"
+  echo -e "or the command itself in single or double quotes"
+  echo -e "\033[33;1mmenu-add\033[0m without arguments for interactively entering elements of ssh command"
+  exit
+}
+
+#Check args for help 
+helptrigger () {
+  if [[ ${argarray[*]} =~ '-h' ]] || [[ ${argarray[*]} =~ '--help' ]]
+      then
+        printhelp
+      fi
+}
+
+#Check if there is command line argument
+if [ $# -ne 0 ]
+  then
+    argarray=( "$@" )
+    #Help invocation
+    helptrigger
+    #Remove mock data from server list file
+    demock
+    echo "Adding servers:"
+    for arg in "${argarray[@]}"; do
+      #Check if argument is file
+      if [ -f "$arg" ]
+        then
+          #Parse it and get ssh commands out of it
+          confparse $arg
+        else
+          #If argument is not a file add it as is (later to add validation)
+          sshcommand=$arg
+          addsshstring
+        fi
+    done
+  else
+    #Interactive server ssh command input mode
+    #Initialize command variable
+    sshcommand="ssh "
+    #Remove mock data from server list file
+    demock
+    #Check if proxy is required
+    echo "Is your ssh to be proxied?"
+    while true; do
+      read -n1 yn
+      echo ""
+      case $yn in
+          [Yy]* ) 
+          #Proxy is required
+          while true; do
+            #Input proxy port number
+            echo "Enter proxy port number"
+            read proxyportnum
+            #Check validity of input
+            if [[ $proxyportnum =~ [0-9] ]] 
+              then
+                #Add proxy command to ssh command string
+                sshcommand+="-o ProxyCommand=\"nc -X 5 -x 127.0.0.1:$proxyportnum %h %p\" "
+                break
+              fi
+          done 
+          break;;
+          [Nn]* ) break;;
+          * ) echo "Please answer yes or no.";;
+      esac
+done 
+  while true; do
+    #Input ssh port number
+    echo "Enter ssh port number"
+    read sshportnum
+    #Check validity of input
+    if [[ $sshportnum =~ [0-9] ]] 
+      then
+        #Add port parameter to ssh command string
+        sshcommand+="-p $sshportnum "
+        break
+      fi
+  done 
+  while true; do
+    #Input ssh username
+    echo "Enter username"
+    read sshusername
+    #Check validity of input
+    if [[ $sshusername =~ [0-9a-zA-Z] ]] 
+      then
+        #Add username to ssh command string
+        sshcommand+="$sshusername@"
+        break
+      fi
+  done 
+  while true; do
+    #Input ssh host
+    echo "Enter host (IP address or domain name)"
+    read sshhost
+    #Check validity of input
+    if [[ $sshhost =~ [0-9a-zA-Z.] ]] 
+      then
+        #Add server host to ssh command string
+        sshcommand+="$sshhost"
+        break
+      fi
+  done 
+  #Input server description
+  echo "Enter server description"
+  read servdesc
+  sshcommand+=" #$servdesc"
+  addsshstring
+fi
+
+echo ""

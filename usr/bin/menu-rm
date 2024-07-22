@@ -1,0 +1,89 @@
+#!/bin/bash
+
+#Init variables
+servnum=""
+listfile="/etc/ssh-menu/server-list"
+
+#Help output function
+printhelp () {
+  echo -e "This tool was made for removing servers from the list used by \033[33;1mssh-menu\033[0m utility"
+  echo -e "Usage: \033[33;1mmenu-rm -h\033[0m or \033[33;1mmenu-rm --help\033[0m - to print this help"
+  echo -e "\033[33;1mmenu-rm\033[0m without arguments for chosing which server to remove interactively"
+  echo -e "\033[33;1mmenu-rm <servernumber1> <servernumber2>...\033[0m with as many arguments as you need"
+  echo -e "where argument should be number of existing command in the menu"
+  exit
+}
+
+#Check args for help 
+helptrigger () {
+  if [[ ${argarray[*]} =~ '-h' ]] || [[ ${argarray[*]} =~ '--help' ]]
+      then
+        printhelp
+      fi
+}
+
+#Check server-list file length
+filelength=$(($(wc -l < $listfile)+1))
+
+#Check if there is command line argument
+if [ $# -ne 0 ]
+  then
+    argarray=( "$@" )
+    #Check if there is help argument
+    helptrigger
+    #Add server line numbers for removal
+    for rmserv in "${argarray[@]}"; do
+      if [ "$servnum" != "" ]
+        then
+          servnum+=";"
+        fi
+      servnum+=$rmserv"d"
+    done
+    sudo sed -i "$servnum" $listfile
+  else
+    #Interactive server choice mode
+
+    #Read server list into array for menu
+    mapfile -t servarray < $listfile
+
+    #Chose server number
+    
+    #Clear screen
+    clear
+
+    #Offer options to choose
+    echo "chose server you want to remove"
+    echo ""
+    #Menu in one column
+    COLUMNS=1
+    #Request server number 
+    select servchoice in "${servarray[@]}"
+      do 
+        sshcommand="$servchoice"
+        servnum=$REPLY
+        break;
+      done
+      
+    #Check if argument is out of the range
+    if [[ $servnum -lt 1 || $servnum -gt $filelength ]]
+      then
+        echo "Wrong server number" && exit
+      else
+        #Confirm decision to remove the server
+        echo "Remove \"$sshcommand\"? y/n"
+        read -n1 yn
+        echo ""
+        case $yn in
+            [Yy]* )
+            servnum+="d"
+            sudo sed -i "$servnum" $listfile
+            ;;
+            [Nn]* )
+            echo "Operation discarded" && exit
+            ;;
+            * )
+            echo "Unrecognized option" && exit
+            ;;
+        esac
+        fi
+  fi
