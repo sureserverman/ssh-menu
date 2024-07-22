@@ -1,6 +1,6 @@
-Package: adminitools
-Version: 0.8.9b
+Package: ssh-menu
+Version: 0.9.9b
 Maintainer: Server Man
 Architecture: all
-Description: Mini tools for admins
-Source: adminitools
+Description: Simple text-based ssh-menu for admins
+Source: ssh-menu
