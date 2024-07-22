@@ -4,3 +4,8 @@ if [ ! -f /etc/ssh-menu/server-list ]
 then
     cp /etc/ssh-menu/server-list.example /etc/ssh-menu/server-list
 fi
+
+if [ -f /etc/ssh-menu/server-list.sample ]
+then
+    rm -f /etc/ssh-menu/server-list.sample
+fi
