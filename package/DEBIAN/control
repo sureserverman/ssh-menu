@@ -1,5 +1,5 @@
 Package: ssh-menu
-Version: 0.9.9b
+Version: 0.9.12b
 Maintainer: Server Man
 Architecture: all
 Description: Simple text-based ssh-menu for admins

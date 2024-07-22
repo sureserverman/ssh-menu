@@ -1,6 +1,0 @@
-#!/bin/bash
-
-if [ ! -f /etc/ssh-menu/server-list ]
-then
-    cp /etc/ssh-menu/server-list.sample /etc/ssh-menu/server-list
-fi
