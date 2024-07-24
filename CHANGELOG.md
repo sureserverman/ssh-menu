@@ -1,1 +1,1 @@
-v0.8 Stable but in process of functionality forming
+v1.0.3 Stable release
