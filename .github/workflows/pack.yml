@@ -1,1 +1,43 @@
+name: pack
+
+on:
+    push:
+      branches:
+        main
+
+jobs:
+  pack:
+    name: "Pack ssh-menu to deb"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: package
+        run: dpkg-deb --build package ssh-menu.deb
+      - name: add signing key
+        run: echo -n "$GPG_SIGNING_KEY" | base64 --decode | gpg --import
+        env:
+          GPG_SIGNING_KEY: ${{ secrets.GPG_SIGNING_KEY }}
+      - name: install required program
+        run: sudo apt-get install dpkg-sig
+      - name: sign the package
+        run: dpkg-sig --sign builder ssh-menu.deb
+      - name: version
+        run: echo "VERSION=$(cat package/DEBIAN/control | grep Version | cut -d ' ' -f 2)" >> $GITHUB_ENV
+      - name: Publish release
+        uses: softprops/action-gh-release@v2
+        id: create_release
+        with:
+          draft: false
+          prerelease: false
+          name: "ssh-menu v${{ env.VERSION }}"
+          tag_name: "v${{ env.VERSION }}"
+          body_path: CHANGELOG.md
+          files: ssh-menu.deb
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ssh-menu.deb
+          path: .
+
 
