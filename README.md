@@ -56,7 +56,7 @@
 
 ### Built With
 
-> Pure bash and bash only. No strings attached. Thus it can be installed to any debian-based liux distro and any architecture
+> Pure bash and bash only. No strings attached. Thus it can be installed to any debian-based linux distro and any architecture
 
 ## Getting Started
 
