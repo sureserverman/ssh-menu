@@ -51,6 +51,7 @@
 > This set of tools was made to simplify and automate some daily tasks of linux administrators. 
 > It includes **ssh-menu** for easy ssh access to your servers, **menu-add** for adding servers to your server list for ***ssh-menu*** and
 > **menu-rm** for servers removal from the abovementioned list
+>
 > If you have any ideas about what to add to this set, feel free to create an issue or a pull request
 
 ### Built With
