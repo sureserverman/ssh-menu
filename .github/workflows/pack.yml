@@ -17,8 +17,15 @@ jobs:
         run: echo -n "$GPG_SIGNING_KEY" | base64 --decode | gpg --import
         env:
           GPG_SIGNING_KEY: ${{ secrets.GPG_SIGNING_KEY }}
+      # apt-get update first: the hosted runner image ships with an empty package
+      # index, so a bare `apt-get install` cannot find dpkg-sig and exits 100 —
+      # which is what has failed this job on every push since April. -y because
+      # there is no TTY to answer the prompt, and dpkg-sig is still in universe
+      # on noble and later, so no extra repository is needed.
       - name: install required program
-        run: sudo apt-get install dpkg-sig
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends dpkg-sig
       - name: sign the package
         run: dpkg-sig --sign builder ssh-menu.deb
       - name: version
