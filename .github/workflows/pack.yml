@@ -13,21 +13,25 @@ jobs:
       - uses: actions/checkout@v4
       - name: package
         run: dpkg-deb --build package ssh-menu.deb
-      - name: add signing key
-        run: echo -n "$GPG_SIGNING_KEY" | base64 --decode | gpg --import
-        env:
-          GPG_SIGNING_KEY: ${{ secrets.GPG_SIGNING_KEY }}
-      # apt-get update first: the hosted runner image ships with an empty package
-      # index, so a bare `apt-get install` cannot find dpkg-sig and exits 100 —
-      # which is what has failed this job on every push since April. -y because
-      # there is no TTY to answer the prompt, and dpkg-sig is still in universe
-      # on noble and later, so no extra repository is needed.
-      - name: install required program
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y --no-install-recommends dpkg-sig
-      - name: sign the package
-        run: dpkg-sig --sign builder ssh-menu.deb
+      # No signing step here, and no `dpkg-sig` install ahead of it. Two reasons,
+      # in order of how much they matter:
+      #
+      #  - the signature apt actually verifies is the Release file of the
+      #    repository these packages ship from, which infra/utils/publish signs
+      #    via reprepro. `dev.sh` in installers-linux installs ssh-menu with a
+      #    plain `apt-get install`, so that is the path that matters. A signature
+      #    embedded in the .deb (_gpgbuilder) is read by nothing in this
+      #    portfolio — no project runs dpkg-sig --verify or debsig-verify;
+      #  - dpkg-sig is gone. Ubuntu last published it in lunar (23.04) and
+      #    ubuntu-latest is noble, so the install ended at "E: Unable to locate
+      #    package dpkg-sig" (exit 100). That is what failed this job on every
+      #    push since April.
+      #
+      # debsigs would install and would sign, which is why it looked like the
+      # fix — but it only moves the same unread blob to a different ar member
+      # (_gpgorigin), so it buys nothing. If a release artefact ever needs to be
+      # verifiable outside apt, attach a detached `gpg --armor --detach-sign`
+      # signature next to it rather than embedding one.
       - name: version
         run: echo "VERSION=$(cat package/DEBIAN/control | grep Version | cut -d ' ' -f 2)" >> $GITHUB_ENV
       - name: Publish release
